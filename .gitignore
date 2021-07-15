@@ -56,3 +56,4 @@ dkms.conf
 
 /rustserver/target
 /rustserver/Cargo.lock
+node_modules
