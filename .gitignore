@@ -54,5 +54,5 @@ dkms.conf
 
 # Added by cargo
 
-/target
-Cargo.lock
+/rustserver/target
+/rustserver/Cargo.lock
