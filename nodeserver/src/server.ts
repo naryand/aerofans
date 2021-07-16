@@ -1,6 +1,7 @@
-const express = require('express');
-const helmet = require('helmet');
-const morgan = require('morgan');
+import express from 'express';
+import helmet from 'helmet';
+import morgan from 'morgan';
+
 const app = express();
 
 const PORT = process.env.PORT || 9000;
