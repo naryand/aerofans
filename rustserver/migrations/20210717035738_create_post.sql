@@ -1,14 +1,14 @@
 -- create_posts.sql
-CREATE TABLE IF NOT EXISTS posts (
-    id BIGSERIAL PRIMARY KEY,
-    text TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'utc')
+create table if not exists posts (
+    id bigserial primary key,
+    text text not null,
+    created_at timestamp with time zone not null default (current_timestamp at time zone 'utc')
 );
 
 -- seed db with some test data for local dev
-INSERT INTO posts
+insert into posts
 (text)
-VALUES
-('Test post 1'),
-('Test post 2'),
-('Test post 3');
+values
+('test post 1'),
+('test post 2'),
+('test post 3');
