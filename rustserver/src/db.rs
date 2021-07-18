@@ -21,6 +21,10 @@ impl Db {
         Ok(Db { pool })
     }
 
+    //
+    // --------------------------- POSTS ---------------------------
+    //
+
     pub async fn create_post(&self, create_post: CreatePost) -> Result<Post, StdErr> {
         let post = sqlx::query_as("INSERT INTO posts (text) VALUES ($1) RETURNING *")
             .bind(&create_post.text)
@@ -60,6 +64,10 @@ impl Db {
             .await?;
         Ok(())
     }
+
+    //
+    // --------------------------- REPLIES ---------------------------
+    //
 
     pub async fn create_reply(
         &self,
