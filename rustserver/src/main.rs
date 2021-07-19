@@ -24,7 +24,7 @@ async fn main() -> Result<(), StdErr> {
     builder.set_certificate_chain_file("cert.pem").unwrap();
 
     // Start server
-    HttpServer::new(move || App::new().data(db.clone()).service(routes::api()))
+    HttpServer::new(move || App::new().data(db.clone()).configure(routes::config))
         .bind_openssl("127.0.0.1:8443", builder)?
         .run()
         .await?;
