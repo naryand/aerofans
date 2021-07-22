@@ -57,3 +57,7 @@ dkms.conf
 /rustserver/target
 /rustserver/Cargo.lock
 node_modules
+rustserver/*.pem
+nodeserver/sslcert/
+nodeserver/.env
+rustserver/.env
