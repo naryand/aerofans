@@ -19,7 +19,6 @@ pub struct User {
 // Used for logging in or registering Users
 // Minimal subset of attributes to create a User
 #[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct LoginUser {
     pub username: String,
     pub password: String,
@@ -27,7 +26,6 @@ pub struct LoginUser {
 
 // Login response
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct LoginResponse {
     pub status: bool,
     pub message: String,
@@ -51,7 +49,6 @@ pub struct AuthUser {
 // Post struct
 // contains all info for a Post
 #[derive(Debug, Clone, Serialize, FromRow)]
-#[serde(rename_all = "camelCase")]
 pub struct Post {
     pub id: i64,
     pub author: i64,
@@ -63,7 +60,6 @@ pub struct Post {
 // Used for creating Posts
 // Minimal subset of attributes to create a Post
 #[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct CreatePost {
     pub text: String,
 }
@@ -71,7 +67,6 @@ pub struct CreatePost {
 // Used for editing Posts
 // Editable attributes of a Post
 #[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct UpdatePost {
     pub text: String,
 }
@@ -83,7 +78,6 @@ pub struct UpdatePost {
 // Reply struct
 // contains all info for a comment reply
 #[derive(Debug, Clone, Serialize, FromRow)]
-#[serde(rename_all = "camelCase")]
 pub struct Reply {
     pub id: i64,
     pub post_id: i64,
@@ -96,7 +90,6 @@ pub struct Reply {
 // Used for creating Replies
 // Minimal subset of attributes to create a reply
 #[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct CreateReply {
     pub text: String,
 }
@@ -104,7 +97,6 @@ pub struct CreateReply {
 // Used for editing Postss
 // Editable attributes of a Reply
 #[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct UpdateReply {
     pub text: String,
 }

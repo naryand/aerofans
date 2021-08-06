@@ -230,7 +230,7 @@ async fn update_post(
     author: AuthUser,
 ) -> Result<Json<Post>, InternalError<StdErr>> {
     let post = db.read_post(post_id).await.map_err(to_not_found)?;
-    
+
     if post.author != author.id {
         return Err(InternalError::new(
             String::from("not real author").into(),

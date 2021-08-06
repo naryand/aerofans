@@ -4,6 +4,7 @@ mod routes;
 
 use crate::db::Db;
 
+use actix_cors::Cors;
 use actix_web::{App, HttpServer};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
@@ -24,10 +25,19 @@ async fn main() -> Result<(), StdErr> {
     builder.set_certificate_chain_file("cert.pem").unwrap();
 
     // Start server
-    HttpServer::new(move || App::new().data(db.clone()).configure(routes::config))
-        .bind_openssl("127.0.0.1:8443", builder)?
-        .run()
-        .await?;
+    HttpServer::new(move || {
+        
+        // Add PERMISSIVE CORS controls
+        let cors = Cors::permissive();
+
+        App::new()
+            .wrap(cors)
+            .data(db.clone())
+            .configure(routes::config)
+    })
+    .bind_openssl("127.0.0.1:8443", builder)?
+    .run()
+    .await?;
 
     Ok(())
 }
