@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 actix-web = {version = "3.3", features = ["openssl"]}
+actix-cors = "0.5"
 bcrypt = "0.10"
 chrono = {version = "0.4", features = ["serde"]}
 dotenv = "0.15"
