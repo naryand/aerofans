@@ -1,11 +1,13 @@
 use chrono::{DateTime, Utc};
+use reqwasm::http::Request;
 use serde::Deserialize;
-use yew::{format::{Json, Nothing}, prelude::*, services::{FetchService, fetch::{FetchTask, Request, Response}}};
+use wasm_bindgen_futures::spawn_local;
+use yew::prelude::*;
 
 #[derive(Debug)]
 pub enum Msg {
     GetPosts,
-    ReceiveResponse(Result<Vec<Post>, anyhow::Error>),
+    ReceiveResponse(Option<Vec<Post>>),
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -20,7 +22,7 @@ pub struct Post {
 #[derive(Debug)]
 struct PostList {
     link: ComponentLink<Self>,
-    fetch_task: Option<FetchTask>,
+    fetch_task: Option<()>,
     posts: Option<Vec<Post>>,
     error: Option<String>,
 }
@@ -57,7 +59,7 @@ impl PostList {
 impl Component for PostList {
     type Message = Msg;
     type Properties = ();
-    
+
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
         link.send_message(Msg::GetPosts);
         PostList {
@@ -71,25 +73,23 @@ impl Component for PostList {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::GetPosts => {
-                let request = Request::get("https://127.0.0.1:8443/post/all")
-                    .body(Nothing).expect("get fail");
-                let callback = self.link.callback(|res: Response<Json<Result<Vec<Post>, anyhow::Error>>>| {
-                    let Json(data) = res.into_body();
-                    Msg::ReceiveResponse(data)
+                self.fetch_task = Some(());
+                let cb = self.link.callback(Msg::ReceiveResponse);
+                spawn_local(async move {
+                    let res = Request::get("http://127.0.0.1:8000/post/all")
+                        .send()
+                        .await
+                        .unwrap();
+                    let data: Option<Vec<Post>> = res.json().await.ok();
+                    cb.emit(data);
                 });
-                let task = FetchService::fetch(request, callback).expect("task fail");
-                self.fetch_task = Some(task);
                 true
             }
-            Msg::ReceiveResponse(response) => {
-                match response {
-                    Ok(posts) => self.posts = Some(posts),
-                    Err(e) => self.error = Some(e.to_string()),
-                }
+            Msg::ReceiveResponse(data) => {
                 self.fetch_task = None;
+                self.posts = data;
                 true
             }
-
         }
     }
 
@@ -112,6 +112,5 @@ impl Component for PostList {
 }
 
 fn main() {
-    wasm_logger::init(wasm_logger::Config::default());
     yew::start_app::<PostList>();
 }

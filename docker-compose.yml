@@ -1,0 +1,31 @@
+version: '2.1'
+
+services: 
+  postgres:
+    image: postgres
+    environment: 
+      PGUSER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: aerofans
+    ports: 
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rustserver:
+    build: ./rustserver
+    ports: 
+      - "8000:8000"
+    depends_on: 
+      postgres:
+        condition: service_healthy
+
+  rustfrontend:
+    build: ./rustfrontend
+    ports: 
+      - "8080:8080"
+    depends_on: 
+      - rustserver
