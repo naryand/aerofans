@@ -76,7 +76,7 @@ impl Component for PostList {
                 self.fetch_task = Some(());
                 let cb = self.link.callback(Msg::ReceiveResponse);
                 spawn_local(async move {
-                    let res = Request::get("https://127.0.0.1:8443/post/all")
+                    let res = Request::get("http://127.0.0.1:8000/post/all")
                         .send()
                         .await
                         .unwrap();

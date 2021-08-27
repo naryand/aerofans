@@ -1,5 +1,5 @@
 [package]
-name = "aero_fans"
+name = "rustserver"
 version = "0.1.0"
 authors = ["naryand <naryand@sfu.ca>"]
 edition = "2018"
@@ -15,4 +15,4 @@ dotenv = "0.15"
 futures = "0.3"
 openssl = "0.10"
 serde = {version = "1.0", features = ["derive"]}
-sqlx = {version = "0.4", features = ["runtime-actix-native-tls", "chrono", "postgres", "tls"]}
+sqlx = {version = "0.4", features = ["runtime-actix-native-tls", "chrono", "postgres"]}
