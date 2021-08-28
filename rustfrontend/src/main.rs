@@ -1,7 +1,8 @@
 mod components;
+mod model;
 mod pages;
 
-use pages::{all_posts::AllPosts, not_found::NotFound};
+use pages::{all_posts::AllPosts, not_found::NotFound, post_comments::PostComments};
 
 use yew::prelude::*;
 use yew_router::{prelude::*, switch::Permissive};
@@ -9,12 +10,15 @@ use yew_router::{prelude::*, switch::Permissive};
 #[derive(Clone, Debug, Switch)]
 enum AppRoute {
     #[to = "/!"]
-    PostList,
+    AllPosts,
+    #[to = "/post/{id}"]
+    PostComments(i64),
     #[to = "/404"]
     NotFound(Permissive<String>),
 }
 
 type AppRouter = Router<AppRoute>;
+type AppAnchor = RouterAnchor<AppRoute>;
 
 struct Model {}
 
@@ -53,7 +57,8 @@ impl Component for Model {
 impl Model {
     fn switch(switch: AppRoute) -> Html {
         match switch {
-            AppRoute::PostList => html! { < AllPosts /> },
+            AppRoute::AllPosts => html! { < AllPosts /> },
+            AppRoute::PostComments(id) => html! { < PostComments id=id /> },
             AppRoute::NotFound(Permissive(route)) => html! { < NotFound route=route /> },
         }
     }

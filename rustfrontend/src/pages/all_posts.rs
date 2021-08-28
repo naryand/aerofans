@@ -1,8 +1,6 @@
-use crate::components::post::Post;
+use crate::{components::post::Post, model::PostData};
 
-use chrono::{DateTime, Utc};
 use reqwasm::http::Request;
-use serde::Deserialize;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
@@ -10,15 +8,6 @@ use yew::prelude::*;
 pub enum Msg {
     GetPosts,
     ReceiveResponse(Result<Vec<PostData>, String>),
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct PostData {
-    id: i64,
-    author: i64,
-    username: String,
-    text: String,
-    created_at: DateTime<Utc>,
 }
 
 pub struct AllPosts {
@@ -30,13 +19,16 @@ impl AllPosts {
     fn view_posts(&self) -> Html {
         match &self.posts {
             Ok(p) => html! {
-                {
-                    for p.iter().map(|post| html! {
-                        <div>
-                            < Post username=post.username.clone() text=post.text.clone() created_at=post.created_at />
-                        </div>
-                    })
-                }
+                for p.iter().map(|post| html! {
+                    <div>
+                        < Post
+                            id=post.id
+                            username=post.username.clone()
+                            text=post.text.clone()
+                            created_at=post.created_at
+                        />
+                    </div>
+                })
             },
             Err(e) => html! { <p>{ e.clone() }</p> },
         }
