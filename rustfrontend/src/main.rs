@@ -1,7 +1,7 @@
 mod components;
 mod pages;
 
-use pages::{not_found::NotFound, post_list::PostList};
+use pages::{all_posts::AllPosts, not_found::NotFound};
 
 use yew::prelude::*;
 use yew_router::{prelude::*, switch::Permissive};
@@ -16,17 +16,14 @@ enum AppRoute {
 
 type AppRouter = Router<AppRoute>;
 
-struct Model {
-    #[allow(dead_code)]
-    link: ComponentLink<Self>,
-}
+struct Model {}
 
 impl Component for Model {
     type Message = ();
     type Properties = ();
 
-    fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Self { link }
+    fn create(_props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+        Self {}
     }
 
     fn update(&mut self, _msg: Self::Message) -> ShouldRender {
@@ -56,7 +53,7 @@ impl Component for Model {
 impl Model {
     fn switch(switch: AppRoute) -> Html {
         match switch {
-            AppRoute::PostList => html! { < PostList /> },
+            AppRoute::PostList => html! { < AllPosts /> },
             AppRoute::NotFound(Permissive(route)) => html! { < NotFound route=route /> },
         }
     }
