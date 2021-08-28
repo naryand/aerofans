@@ -12,3 +12,11 @@ reqwasm = "0.2"
 serde = "1.0"
 wasm-bindgen-futures = "0.4"
 yew = "0.18"
+yew-router = "0.15"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-Os']
+
+[profile.release]
+opt-level = "s"
+lto = true

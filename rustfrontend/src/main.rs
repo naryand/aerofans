@@ -1,116 +1,67 @@
-use chrono::{DateTime, Utc};
-use reqwasm::http::Request;
-use serde::Deserialize;
-use wasm_bindgen_futures::spawn_local;
+mod components;
+mod pages;
+
+use pages::{not_found::NotFound, post_list::PostList};
+
 use yew::prelude::*;
+use yew_router::{prelude::*, switch::Permissive};
 
-#[derive(Debug)]
-pub enum Msg {
-    GetPosts,
-    ReceiveResponse(Option<Vec<Post>>),
+#[derive(Clone, Debug, Switch)]
+enum AppRoute {
+    #[to = "/!"]
+    PostList,
+    #[to = "/404"]
+    NotFound(Permissive<String>),
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct Post {
-    pub id: i64,
-    pub author: i64,
-    pub username: String,
-    pub text: String,
-    pub created_at: DateTime<Utc>,
-}
+type AppRouter = Router<AppRoute>;
 
-#[derive(Debug)]
-struct PostList {
+struct Model {
+    #[allow(dead_code)]
     link: ComponentLink<Self>,
-    fetch_task: Option<()>,
-    posts: Option<Vec<Post>>,
-    error: Option<String>,
 }
 
-impl PostList {
-    fn view_posts(&self) -> Html {
-        match &self.posts {
-            Some(p) => html! {
-                <div>
-                    { for p.iter().map(|post| html! { <p>{ format!("{} by {} at {}", post.text, post.username, post.created_at) }</p> }) }
-                </div>
-            },
-            None => html! {},
-        }
-    }
-
-    fn view_fetch(&self) -> Html {
-        match &self.fetch_task {
-            Some(_) => html! { <p>{ "fetching posts" }</p> },
-            None => html! {},
-        }
-    }
-
-    fn view_error(&self) -> Html {
-        match &self.error {
-            Some(e) => html! {
-                <p>{ e.clone() }</p>
-            },
-            None => html! {},
-        }
-    }
-}
-
-impl Component for PostList {
-    type Message = Msg;
+impl Component for Model {
+    type Message = ();
     type Properties = ();
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        link.send_message(Msg::GetPosts);
-        PostList {
-            link,
-            fetch_task: None,
-            posts: None,
-            error: None,
-        }
+        Self { link }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        match msg {
-            Msg::GetPosts => {
-                self.fetch_task = Some(());
-                let cb = self.link.callback(Msg::ReceiveResponse);
-                spawn_local(async move {
-                    let res = Request::get("http://127.0.0.1:8000/post/all")
-                        .send()
-                        .await
-                        .unwrap();
-                    let data: Option<Vec<Post>> = res.json().await.ok();
-                    cb.emit(data);
-                });
-                true
-            }
-            Msg::ReceiveResponse(data) => {
-                self.fetch_task = None;
-                self.posts = data;
-                true
-            }
-        }
+    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
+        false
     }
 
     fn change(&mut self, _props: Self::Properties) -> ShouldRender {
-        // Should only return "true" if new properties are different to
-        // previously received properties.
-        // This component has no properties so we will always return "false".
         false
     }
 
     fn view(&self) -> Html {
         html! {
             <>
-                { self.view_posts() }
-                { self.view_fetch() }
-                { self.view_error() }
+                <main>
+                    <AppRouter
+                        render=AppRouter::render(Self::switch)
+                        redirect=AppRouter::redirect(|route: Route| {
+                            AppRoute::NotFound(Permissive(Some(route.route)))
+                        })
+                    />
+                </main>
             </>
         }
     }
 }
 
+impl Model {
+    fn switch(switch: AppRoute) -> Html {
+        match switch {
+            AppRoute::PostList => html! { < PostList /> },
+            AppRoute::NotFound(Permissive(route)) => html! { < NotFound route=route /> },
+        }
+    }
+}
+
 fn main() {
-    yew::start_app::<PostList>();
+    yew::start_app::<Model>();
 }

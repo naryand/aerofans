@@ -17,6 +17,7 @@ services:
 
   rustserver:
     build: ./rustserver
+    image: naryand/aerofans_rustserver:latest
     ports: 
       - "8000:8000"
     depends_on: 
@@ -25,6 +26,7 @@ services:
 
   rustfrontend:
     build: ./rustfrontend
+    image: naryand/aerofans_rustfrontend:latest
     ports: 
       - "8080:8080"
     depends_on: 
