@@ -3,7 +3,7 @@ use crate::{
     model::{CommentData, PostData},
 };
 
-use reqwasm::http::Request;
+use reqwasm::http::{Request, RequestCredentials};
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
@@ -31,10 +31,10 @@ impl PostComments {
         match &self.post {
             Ok(p) => html! {
                 <div>
-                    < Post id=p.id username=p.username.clone() text=p.text.clone() created_at=p.created_at />
+                    <Post id=p.id username=p.username.to_owned() text=p.text.to_owned() created_at=p.created_at/>
                 </div>
             },
-            Err(e) => html! { <p>{ e.clone() }</p> },
+            Err(e) => html! { <p>{ e.to_owned() }</p> },
         }
     }
 
@@ -43,11 +43,11 @@ impl PostComments {
             Ok(c) => html! {
                 for c.iter().map(|comm| html! {
                     <div>
-                        < Comment username=comm.username.clone() text=comm.text.clone() created_at=comm.created_at />
+                        <Comment username=comm.username.to_owned() text=comm.text.to_owned() created_at=comm.created_at/>
                     </div>
                 })
             },
-            Err(e) => html! { <p> { e.clone() }</p> },
+            Err(e) => html! { <p> { e.to_owned() }</p> },
         }
     }
 }
@@ -62,8 +62,8 @@ impl Component for PostComments {
         PostComments {
             props,
             link,
-            post: Err(format!("fetching posts")),
-            comments: Err(format!("fetching comments")),
+            post: Err(format!("fetching posts...")),
+            comments: Err(format!("fetching comments...")),
         }
     }
 
@@ -73,10 +73,17 @@ impl Component for PostComments {
                 let cb = self.link.callback(Msg::ReceivePost);
                 let id = self.props.id;
                 spawn_local(async move {
-                    let res = Request::get(&format!("http://127.0.0.1:8000/post/{}", id))
+                    let res = match Request::get(&format!("http://127.0.0.1:8000/post/{}", id))
+                        .credentials(RequestCredentials::Include)
                         .send()
                         .await
-                        .unwrap();
+                    {
+                        Ok(res) => res,
+                        Err(e) => {
+                            cb.emit(Err(e.to_string()));
+                            return;
+                        }
+                    };
                     let data: Result<PostData, String> =
                         res.json().await.map_err(|x| x.to_string());
                     cb.emit(data);
@@ -88,6 +95,7 @@ impl Component for PostComments {
                 let id = self.props.id;
                 spawn_local(async move {
                     let res = Request::get(&format!("http://127.0.0.1:8000/post/{}/reply/all", id))
+                        .credentials(RequestCredentials::Include)
                         .send()
                         .await
                         .unwrap();

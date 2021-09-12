@@ -1,6 +1,6 @@
 use crate::{components::post::Post, model::PostData};
 
-use reqwasm::http::Request;
+use reqwasm::http::{Request, RequestCredentials};
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
@@ -21,16 +21,16 @@ impl AllPosts {
             Ok(p) => html! {
                 for p.iter().map(|post| html! {
                     <div>
-                        < Post
+                        <Post
                             id=post.id
-                            username=post.username.clone()
-                            text=post.text.clone()
+                            username=post.username.to_owned()
+                            text=post.text.to_owned()
                             created_at=post.created_at
-                        />
+                    />
                     </div>
                 })
             },
-            Err(e) => html! { <p>{ e.clone() }</p> },
+            Err(e) => html! { <p>{ e.as_str() }</p> },
         }
     }
 }
@@ -43,7 +43,7 @@ impl Component for AllPosts {
         link.send_message(Msg::GetPosts);
         AllPosts {
             link,
-            posts: Err(format!("fetching posts")),
+            posts: Err(format!("fetching posts...")),
         }
     }
 
@@ -52,10 +52,17 @@ impl Component for AllPosts {
             Msg::GetPosts => {
                 let cb = self.link.callback(Msg::ReceiveResponse);
                 spawn_local(async move {
-                    let res = Request::get("http://127.0.0.1:8000/post/all")
+                    let res = match Request::get("http://127.0.0.1:8000/post/all")
+                        .credentials(RequestCredentials::Include)
                         .send()
                         .await
-                        .unwrap();
+                    {
+                        Ok(res) => res,
+                        Err(e) => {
+                            cb.emit(Err(e.to_string()));
+                            return;
+                        }
+                    };
                     let data: Result<Vec<PostData>, String> =
                         res.json().await.map_err(|x| x.to_string());
                     cb.emit(data);

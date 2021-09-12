@@ -7,6 +7,8 @@ use pages::{all_posts::AllPosts, not_found::NotFound, post_comments::PostComment
 use yew::prelude::*;
 use yew_router::{prelude::*, switch::Permissive};
 
+use crate::pages::auth::Auth;
+
 #[derive(Clone, Debug, Switch)]
 enum AppRoute {
     #[to = "/!"]
@@ -15,6 +17,8 @@ enum AppRoute {
     PostComments(i64),
     #[to = "/404"]
     NotFound(Permissive<String>),
+    #[to = "/auth"]
+    Auth,
 }
 
 type AppRouter = Router<AppRoute>;
@@ -47,7 +51,7 @@ impl Component for Model {
                         redirect=AppRouter::redirect(|route: Route| {
                             AppRoute::NotFound(Permissive(Some(route.route)))
                         })
-                    />
+                   />
                 </main>
             </>
         }
@@ -57,9 +61,10 @@ impl Component for Model {
 impl Model {
     fn switch(switch: AppRoute) -> Html {
         match switch {
-            AppRoute::AllPosts => html! { < AllPosts /> },
-            AppRoute::PostComments(id) => html! { < PostComments id=id /> },
-            AppRoute::NotFound(Permissive(route)) => html! { < NotFound route=route /> },
+            AppRoute::AllPosts => html! { <AllPosts/> },
+            AppRoute::PostComments(id) => html! { <PostComments id=id/> },
+            AppRoute::NotFound(Permissive(route)) => html! { <NotFound route=route/> },
+            AppRoute::Auth => html! { <Auth/> },
         }
     }
 }

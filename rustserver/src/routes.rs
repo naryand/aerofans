@@ -9,14 +9,7 @@ use crate::{
 
 use std::pin::Pin;
 
-use actix_web::{
-    cookie::Cookie,
-    dev::Payload,
-    error::InternalError,
-    http::StatusCode,
-    web::{self, Data, Json, Path, ServiceConfig},
-    FromRequest, HttpMessage, HttpRequest, HttpResponse,
-};
+use actix_web::{FromRequest, HttpMessage, HttpRequest, HttpResponse, cookie::{Cookie, SameSite}, dev::Payload, error::InternalError, http::StatusCode, web::{self, Data, Json, Path, ServiceConfig}};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use futures::{future, Future, FutureExt};
 
@@ -87,10 +80,15 @@ async fn login_user(login_user: Json<LoginUser>, db: Data<Db>) -> HttpResponse {
         let mut buf = [0; 16];
         openssl::rand::rand_bytes(&mut buf).unwrap();
         let id = openssl::base64::encode_block(&buf);
-        response.add_cookie(&Cookie::new("token", &id)).unwrap();
+        let cookie = Cookie::build("token", &id)
+            .secure(true)
+            .permanent()
+            .same_site(SameSite::None)
+            .finish();
+        response.add_cookie(&cookie).unwrap();
 
         // Set expiry
-        let expiry = chrono::Utc::now() + chrono::Duration::hours(1);
+        let expiry = chrono::Utc::now() + chrono::Duration::weeks(1240);
 
         // Build
         let token = Token {
