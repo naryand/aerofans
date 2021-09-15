@@ -7,7 +7,10 @@ use pages::{all_posts::AllPosts, not_found::NotFound, post_comments::PostComment
 use yew::prelude::*;
 use yew_router::{prelude::*, switch::Permissive};
 
-use crate::pages::auth::Auth;
+use crate::{
+    components::{delete_post::DeletePost, header::Header, make_post::MakePost},
+    pages::auth::Auth,
+};
 
 #[derive(Clone, Debug, Switch)]
 enum AppRoute {
@@ -19,6 +22,12 @@ enum AppRoute {
     NotFound(Permissive<String>),
     #[to = "/auth"]
     Auth,
+    #[to = "/create"]
+    Create,
+    #[to = "/edit/{id}"]
+    Edit(i64),
+    #[to = "/delete/{id}"]
+    Delete(i64),
 }
 
 type AppRouter = Router<AppRoute>;
@@ -45,6 +54,7 @@ impl Component for Model {
     fn view(&self) -> Html {
         html! {
             <>
+                <Header/>
                 <main>
                     <AppRouter
                         render=AppRouter::render(Self::switch)
@@ -65,6 +75,9 @@ impl Model {
             AppRoute::PostComments(id) => html! { <PostComments id=id/> },
             AppRoute::NotFound(Permissive(route)) => html! { <NotFound route=route/> },
             AppRoute::Auth => html! { <Auth/> },
+            AppRoute::Create => html! { <MakePost id=0 action="create"/> },
+            AppRoute::Edit(id) => html! { <MakePost id=id action="edit"/> },
+            AppRoute::Delete(id) => html! { <DeletePost id=id/> },
         }
     }
 }

@@ -40,16 +40,16 @@ impl Component for Auth {
     type Properties = ();
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Auth {
+        Self {
             link,
-            status: Err(format!("")),
+            status: Err(String::from("")),
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::Register(username, password) => {
-                self.status = Err(format!("registering..."));
+                self.status = Err(String::from("registering..."));
                 let credentials = LoginUser { username, password };
                 let cb = self.link.callback(Msg::ReceiveResponse);
                 spawn_local(async move {
@@ -72,7 +72,7 @@ impl Component for Auth {
                 });
             }
             Msg::Login(username, password) => {
-                self.status = Err(format!("logging in..."));
+                self.status = Err(String::from("logging in..."));
                 let credentials = LoginUser { username, password };
                 let cb = self.link.callback(Msg::ReceiveResponse);
                 spawn_local(async move {

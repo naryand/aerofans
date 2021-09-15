@@ -43,7 +43,14 @@ impl Component for Post {
                 <AppAnchor route=AppRoute::PostComments(self.props.id)>
                     { format!("{}", self.props.text) }
                 </AppAnchor>
-                { format!(" by {} at {}", self.props.username, self.props.created_at) }
+                { format!(" by {} at {} ", self.props.username, self.props.created_at) }
+                <AppAnchor route=AppRoute::Edit(self.props.id)>
+                    { String::from("edit") }
+                </AppAnchor>
+                { String::from(" ") }
+                <AppAnchor route=AppRoute::Delete(self.props.id)>
+                    { String::from("delete") }
+                </AppAnchor>
             </p>
         }
     }

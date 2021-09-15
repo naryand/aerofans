@@ -41,9 +41,9 @@ impl Component for AllPosts {
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
         link.send_message(Msg::GetPosts);
-        AllPosts {
+        Self {
             link,
-            posts: Err(format!("fetching posts...")),
+            posts: Err(String::from("fetching posts...")),
         }
     }
 
@@ -81,6 +81,10 @@ impl Component for AllPosts {
     }
 
     fn view(&self) -> Html {
-        html! { self.view_posts() }
+        html! {
+            <>
+                { self.view_posts() }
+            </>
+        }
     }
 }

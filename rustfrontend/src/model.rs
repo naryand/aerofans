@@ -10,6 +10,11 @@ pub struct PostData {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct PostText {
+    pub text: String,
+}
+
 // contains all info for a comment reply
 #[derive(Deserialize, Debug, Clone)]
 pub struct CommentData {

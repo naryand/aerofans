@@ -59,11 +59,11 @@ impl Component for PostComments {
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         link.send_message(Msg::GetPost);
         link.send_message(Msg::GetComments);
-        PostComments {
+        Self {
             props,
             link,
-            post: Err(format!("fetching posts...")),
-            comments: Err(format!("fetching comments...")),
+            post: Err(String::from("fetching posts...")),
+            comments: Err(String::from("fetching comments...")),
         }
     }
 
