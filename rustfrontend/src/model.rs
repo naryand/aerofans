@@ -18,8 +18,8 @@ pub struct PostText {
 // contains all info for a comment reply
 #[derive(Deserialize, Debug, Clone)]
 pub struct CommentData {
-    id: i64,
-    post_id: i64,
+    pub id: i64,
+    pub post_id: i64,
     author: i64,
     pub username: String,
     pub text: String,

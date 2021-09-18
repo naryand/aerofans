@@ -1,5 +1,5 @@
 use crate::{
-    components::{comment::Comment, post::Post},
+    components::{comment::Comment, make_post::MakePost, post::Post},
     model::{CommentData, PostData},
 };
 
@@ -43,7 +43,13 @@ impl PostComments {
             Ok(c) => html! {
                 for c.iter().map(|comm| html! {
                     <div>
-                        <Comment username=comm.username.to_owned() text=comm.text.to_owned() created_at=comm.created_at/>
+                        <Comment
+                            id=comm.id
+                            post_id=comm.post_id
+                            username=comm.username.to_owned()
+                            text=comm.text.to_owned()
+                            created_at=comm.created_at
+                        />
                     </div>
                 })
             },
@@ -131,6 +137,7 @@ impl Component for PostComments {
             <>
                 { self.view_posts() }
                 <hr/>
+                <MakePost post_id=self.props.id action="create_reply"/>
                 { self.view_comments() }
             </>
         }

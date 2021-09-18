@@ -10,7 +10,9 @@ pub enum Msg {
 
 #[derive(Clone, Eq, PartialEq, Properties)]
 pub struct Props {
-    pub id: i64,
+    pub post_id: i64,
+    pub reply_id: Option<i64>,
+    pub reply: Option<()>,
 }
 
 pub struct DeletePost {
@@ -43,28 +45,55 @@ impl Component for DeletePost {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         let cb = self.link.callback(Msg::ReceiveResponse);
-        let id = self.props.id;
+        let post_id = self.props.post_id;
+        let reply_id = self.props.reply_id;
         match msg {
-            Msg::Delete => spawn_local(async move {
-                match Request::delete(&format!("http://127.0.0.1:8000/post/{}", id))
+            Msg::Delete => match self.props.reply {
+                None => spawn_local(async move {
+                    match Request::delete(&format!("http://127.0.0.1:8000/post/{}", post_id))
+                        .credentials(RequestCredentials::Include)
+                        .send()
+                        .await
+                    {
+                        Ok(res) => match res.status() {
+                            200 => {}
+                            _ => {
+                                cb.emit(Err(res.status_text()));
+                                return;
+                            }
+                        },
+                        Err(e) => {
+                            cb.emit(Err(e.to_string()));
+                            return;
+                        }
+                    }
+                    cb.emit(Ok(String::from("Post sucessfully deleted")));
+                }),
+                Some(_) => spawn_local(async move {
+                    match Request::delete(&format!(
+                        "http://127.0.0.1:8000/post/{}/reply/{}",
+                        post_id,
+                        reply_id.unwrap()
+                    ))
                     .credentials(RequestCredentials::Include)
                     .send()
                     .await
-                {
-                    Ok(res) => match res.status() {
-                        200 => {}
-                        _ => {
-                            cb.emit(Err(res.status_text()));
+                    {
+                        Ok(res) => match res.status() {
+                            200 => {}
+                            _ => {
+                                cb.emit(Err(res.status_text()));
+                                return;
+                            }
+                        },
+                        Err(e) => {
+                            cb.emit(Err(e.to_string()));
                             return;
                         }
-                    },
-                    Err(e) => {
-                        cb.emit(Err(e.to_string()));
-                        return;
                     }
-                }
-                cb.emit(Ok(String::from("Post sucessfully deleted")));
-            }),
+                    cb.emit(Ok(String::from("Post sucessfully deleted")));
+                }),
+            },
             Msg::ReceiveResponse(status) => self.status = status,
         };
         true

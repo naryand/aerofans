@@ -12,7 +12,8 @@ pub enum Msg {
 }
 #[derive(Clone, PartialEq, Eq, Properties)]
 pub struct Props {
-    pub id: i64,
+    pub post_id: Option<i64>,
+    pub reply_id: Option<i64>,
     pub action: String,
 }
 
@@ -49,7 +50,8 @@ impl Component for MakePost {
                 self.status = Err(String::from("posting..."));
                 let cb = self.link.callback(Msg::ReceiveResponse);
                 let post = PostText { text };
-                let id = self.props.id;
+                let post_id = self.props.post_id;
+                let reply_id = self.props.reply_id;
                 match self.props.action.as_str() {
                     "create" => spawn_local(async move {
                         let res = match Request::post("http://127.0.0.1:8000/post")
@@ -76,26 +78,83 @@ impl Component for MakePost {
                         cb.emit(data);
                     }),
                     "edit" => spawn_local(async move {
-                        let res =
-                            match Request::patch(&format!("http://127.0.0.1:8000/post/{}", id))
-                                .body(serde_json::to_string(&post).unwrap())
-                                .header("Content-Type", "application/json")
-                                .credentials(RequestCredentials::Include)
-                                .send()
-                                .await
-                            {
-                                Ok(res) => match res.status() {
-                                    200 => res,
-                                    _ => {
-                                        cb.emit(Err(res.status_text()));
-                                        return;
-                                    }
-                                },
-                                Err(e) => {
-                                    cb.emit(Err(e.to_string()));
+                        let res = match Request::patch(&format!(
+                            "http://127.0.0.1:8000/post/{}",
+                            post_id.unwrap()
+                        ))
+                        .body(serde_json::to_string(&post).unwrap())
+                        .header("Content-Type", "application/json")
+                        .credentials(RequestCredentials::Include)
+                        .send()
+                        .await
+                        {
+                            Ok(res) => match res.status() {
+                                200 => res,
+                                _ => {
+                                    cb.emit(Err(res.status_text()));
                                     return;
                                 }
-                            };
+                            },
+                            Err(e) => {
+                                cb.emit(Err(e.to_string()));
+                                return;
+                            }
+                        };
+                        let data: Result<PostData, String> =
+                            res.json().await.map_err(|x| x.to_string());
+                        cb.emit(data);
+                    }),
+                    "create_reply" => spawn_local(async move {
+                        let res = match Request::post(&format!(
+                            "http://127.0.0.1:8000/post/{}/reply",
+                            post_id.unwrap()
+                        ))
+                        .body(serde_json::to_string(&post).unwrap())
+                        .header("Content-Type", "application/json")
+                        .credentials(RequestCredentials::Include)
+                        .send()
+                        .await
+                        {
+                            Ok(res) => match res.status() {
+                                200 => res,
+                                _ => {
+                                    cb.emit(Err(res.status_text()));
+                                    return;
+                                }
+                            },
+                            Err(e) => {
+                                cb.emit(Err(e.to_string()));
+                                return;
+                            }
+                        };
+                        let data: Result<PostData, String> =
+                            res.json().await.map_err(|x| x.to_string());
+                        cb.emit(data);
+                    }),
+                    "edit_reply" => spawn_local(async move {
+                        let res = match Request::patch(&format!(
+                            "http://127.0.0.1:8000/post/{}/reply/{}",
+                            post_id.unwrap(),
+                            reply_id.unwrap(),
+                        ))
+                        .body(serde_json::to_string(&post).unwrap())
+                        .header("Content-Type", "application/json")
+                        .credentials(RequestCredentials::Include)
+                        .send()
+                        .await
+                        {
+                            Ok(res) => match res.status() {
+                                200 => res,
+                                _ => {
+                                    cb.emit(Err(res.status_text()));
+                                    return;
+                                }
+                            },
+                            Err(e) => {
+                                cb.emit(Err(e.to_string()));
+                                return;
+                            }
+                        };
                         let data: Result<PostData, String> =
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);

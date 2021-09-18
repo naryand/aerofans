@@ -1,8 +1,12 @@
 use chrono::{DateTime, Utc};
 use yew::prelude::*;
 
+use crate::{AppAnchor, AppRoute};
+
 #[derive(Clone, PartialEq, Eq, Properties)]
 pub struct Props {
+    pub id: i64,
+    pub post_id: i64,
     pub username: String,
     pub text: String,
     pub created_at: DateTime<Utc>,
@@ -36,7 +40,16 @@ impl Component for Comment {
 
     fn view(&self) -> Html {
         html! {
-            <p>{ format!("{} by {} at {}", self.props.text, self.props.username, self.props.created_at) }</p>
+            <p>
+                { format!("{} by {} at {} ", self.props.text, self.props.username, self.props.created_at) }
+                <AppAnchor route=AppRoute::EditReply(self.props.post_id, self.props.id)>
+                    { "edit" }
+                </AppAnchor>
+                { " " }
+                <AppAnchor route=AppRoute::DeleteReply(self.props.post_id, self.props.id)>
+                    { "delete" }
+                </AppAnchor>
+            </p>
         }
     }
 }

@@ -28,6 +28,10 @@ enum AppRoute {
     Edit(i64),
     #[to = "/delete/{id}"]
     Delete(i64),
+    #[to = "/edit_reply/{post_id}/{reply_id}"]
+    EditReply(i64, i64),
+    #[to = "/delete_reply/{post_id}/{reply_id}"]
+    DeleteReply(i64, i64),
 }
 
 type AppRouter = Router<AppRoute>;
@@ -73,11 +77,20 @@ impl Model {
         match switch {
             AppRoute::AllPosts => html! { <AllPosts/> },
             AppRoute::PostComments(id) => html! { <PostComments id=id/> },
+            
             AppRoute::NotFound(Permissive(route)) => html! { <NotFound route=route/> },
             AppRoute::Auth => html! { <Auth/> },
-            AppRoute::Create => html! { <MakePost id=0 action="create"/> },
-            AppRoute::Edit(id) => html! { <MakePost id=id action="edit"/> },
-            AppRoute::Delete(id) => html! { <DeletePost id=id/> },
+
+            AppRoute::Create => html! { <MakePost action="create"/> },
+            AppRoute::Edit(id) => html! { <MakePost post_id=id action="edit"/> },
+            AppRoute::Delete(id) => html! { <DeletePost post_id=id/> },
+
+            AppRoute::EditReply(post_id, reply_id) => {
+                html! { <MakePost post_id=post_id reply_id=reply_id action="edit_reply"/> }
+            }
+            AppRoute::DeleteReply(post_id, reply_id) => {
+                html! { <DeletePost post_id=post_id reply_id=reply_id reply=Some(())/> }
+            }
         }
     }
 }

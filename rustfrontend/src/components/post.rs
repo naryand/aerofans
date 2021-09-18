@@ -45,11 +45,11 @@ impl Component for Post {
                 </AppAnchor>
                 { format!(" by {} at {} ", self.props.username, self.props.created_at) }
                 <AppAnchor route=AppRoute::Edit(self.props.id)>
-                    { String::from("edit") }
+                    { "edit" }
                 </AppAnchor>
-                { String::from(" ") }
+                { " " }
                 <AppAnchor route=AppRoute::Delete(self.props.id)>
-                    { String::from("delete") }
+                    { "delete" }
                 </AppAnchor>
             </p>
         }

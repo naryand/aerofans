@@ -24,15 +24,15 @@ impl Component for Header {
         html! {
             <>
             <AppAnchor route=AppRoute::AllPosts>
-                { String::from("home") }
+                { "home" }
             </AppAnchor>
             <br/>
             <AppAnchor route=AppRoute::Auth>
-                { String::from("login/register") }
+                { "login/register" }
             </AppAnchor>
             <br/>
             <AppAnchor route=AppRoute::Create>
-                { String::from("create post") }
+                { "create post" }
             </AppAnchor>
             </>
         }
