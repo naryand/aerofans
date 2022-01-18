@@ -18,6 +18,8 @@ services:
   rustserver:
     build: ./rustserver
     image: naryand/aerofans_rustserver:latest
+    environment:
+      - DATABASE_URL=postgres://postgres:123@postgres/aerofans
     ports: 
       - "8000:8000"
     depends_on: 

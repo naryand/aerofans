@@ -77,7 +77,7 @@ impl Model {
         match switch {
             AppRoute::AllPosts => html! { <AllPosts/> },
             AppRoute::PostComments(id) => html! { <PostComments id=id/> },
-            
+
             AppRoute::NotFound(Permissive(route)) => html! { <NotFound route=route/> },
             AppRoute::Auth => html! { <Auth/> },
 

@@ -8,9 +8,9 @@ import https from 'https'
 import morgan from 'morgan'
 import { Pool } from 'pg'
 
-var privateKey  = fs.readFileSync('sslcert/selfsigned.key', 'utf8');
-var certificate = fs.readFileSync('sslcert/selfsigned.crt', 'utf8');
-var credentials = { key: privateKey, cert: certificate }
+//var privateKey  = fs.readFileSync('sslcert/selfsigned.key', 'utf8');
+//var certificate = fs.readFileSync('sslcert/selfsigned.crt', 'utf8');
+//var credentials = { key: privateKey, cert: certificate }
 
 dotenv.config()
 const app = express();
@@ -499,7 +499,7 @@ app.delete('/post/:postId/reply/:replyId', authenticate, deleteReply)
 
 
 // Start server
-const httpsServer = https.createServer(credentials, app)
-httpsServer.listen(PORT, () => {
+//const httpsServer = https.createServer(credentials, app)
+app.listen(PORT, () => {
   console.log(`[server]: Listening on port: ${PORT}`);
 });

@@ -1,8 +1,9 @@
-FROM rust
+FROM rust:1.58.0
 RUN cargo install trunk wasm-bindgen-cli
 RUN rustup target add wasm32-unknown-unknown
 WORKDIR /usr/src/rustfrontend
-COPY . .
+COPY ./src ./src
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./index.html ./index.html
 RUN trunk build --release
-WORKDIR /usr/src/rustfrontend/dist
-CMD python3 -m http.server 8080
+CMD trunk serve --release

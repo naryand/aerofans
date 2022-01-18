@@ -1,13 +1,14 @@
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct PostData {
     pub id: i64,
-    author: i64,
+    #[allow(dead_code)]
+    user_id: i64,
     pub username: String,
     pub text: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: NaiveDateTime,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -15,19 +16,17 @@ pub struct PostText {
     pub text: String,
 }
 
-// contains all info for a comment reply
 #[derive(Deserialize, Debug, Clone)]
 pub struct CommentData {
     pub id: i64,
     pub post_id: i64,
-    author: i64,
+    #[allow(dead_code)]
+    user_id: i64,
     pub username: String,
     pub text: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: NaiveDateTime,
 }
 
-// Used for logging in or registering Users
-// Minimal subset of attributes to create a User
 #[derive(Debug, Clone, Serialize)]
 pub struct LoginUser {
     pub username: String,

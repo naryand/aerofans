@@ -1,6 +1,6 @@
 use crate::{AppAnchor, AppRoute};
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use yew::prelude::*;
 
 #[derive(Clone, PartialEq, Eq, Properties)]
@@ -8,7 +8,7 @@ pub struct Props {
     pub id: i64,
     pub username: String,
     pub text: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: NaiveDateTime,
 }
 
 pub struct Post {

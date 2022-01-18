@@ -1,7 +1,6 @@
-FROM rust
-RUN cargo install sqlx-cli --no-default-features --features postgres
-ENV DATABASE_URL=postgres://postgres:123@postgres/aerofans
+FROM rust:1.58.0
 WORKDIR /usr/src/rustserver
-COPY . .
+COPY ./src ./src
+COPY ./Cargo.toml ./Cargo.toml
 RUN cargo build --release
-CMD sqlx migrate run; cargo run --release
+CMD cargo run --release

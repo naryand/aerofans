@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use yew::prelude::*;
 
 use crate::{AppAnchor, AppRoute};
@@ -9,7 +9,7 @@ pub struct Props {
     pub post_id: i64,
     pub username: String,
     pub text: String,
-    pub created_at: DateTime<Utc>,
+    pub created_at: NaiveDateTime,
 }
 
 pub struct Comment {
