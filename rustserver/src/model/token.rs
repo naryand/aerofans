@@ -4,7 +4,7 @@ use super::*;
 #[sea_orm(table_name = "tokens")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false, column_type = "Char(Some(60))")]
-    pub id: String,
+    pub hash: String,
     pub user_id: i64,
     pub expires_at: DateTime,
 }

@@ -1,5 +1,9 @@
 use crate::{
-    components::{comment::Comment, make_post::{MakePost, Action}, post::Post},
+    components::{
+        comment::Comment,
+        make_post::{Action, MakePost},
+        post::Post,
+    },
     model::{CommentData, PostData},
 };
 

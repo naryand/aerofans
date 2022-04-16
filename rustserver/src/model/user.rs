@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Clone, Serialize)]
 pub struct LoginResponse {
     pub status: bool,
-    pub message: String,
+    pub message: &'static str,
 }
 
 #[derive(Debug, Clone, Deserialize, DeriveIntoActiveModel)]

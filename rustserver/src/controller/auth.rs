@@ -6,7 +6,7 @@ use actix_web::{
     web::{Data, Json},
     FromRequest, HttpRequest, HttpResponse,
 };
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::{hash, hash_with_salt, verify, DEFAULT_COST};
 use chrono::Utc;
 use futures::{future, Future, FutureExt};
 use sea_orm::{
@@ -27,13 +27,14 @@ pub async fn create(
     Json(mut input_user): Json<user::Input>,
     db: Data<DatabaseConnection>,
 ) -> Json<LoginResponse> {
-
     input_user.password = match hash(input_user.password, DEFAULT_COST) {
         Ok(p) => p,
-        Err(e) => return Json(LoginResponse {
-            status: false,
-            message: format!("invalid registration info: {}", e),
-        }),
+        Err(_) => {
+            return Json(LoginResponse {
+                status: false,
+                message: "invalid registration info",
+            })
+        }
     };
 
     let input_user = input_user.into_active_model();
@@ -45,11 +46,11 @@ pub async fn create(
     match input_user.insert(db.get_ref()).await {
         Ok(_) => Json(LoginResponse {
             status: true,
-            message: String::from("registration successful"),
+            message: "registration successful",
         }),
         Err(_) => Json(LoginResponse {
             status: false,
-            message: String::from("username is taken"),
+            message: "username is taken",
         }),
     }
 }
@@ -71,7 +72,7 @@ pub async fn login(
         Err(_) | Ok(None) => {
             return HttpResponse::build(StatusCode::OK).json(LoginResponse {
                 status: false,
-                message: String::from("username doesn't exist"),
+                message: "username doesn't exist",
             })
         }
     };
@@ -80,14 +81,20 @@ pub async fn login(
         // Build response
         let mut response = HttpResponse::build(StatusCode::OK).json(LoginResponse {
             status: true,
-            message: String::from("login successful"),
+            message: "login successful",
         });
 
         // Generate token id and add to response as cookie
         let uuid = Uuid::new_v4();
-        let hash = hash(uuid.as_bytes(), DEFAULT_COST).unwrap();
 
-        let cookie = Cookie::build("token", &hash)
+        let hash = hash_with_salt(uuid.as_bytes(), 4, &[0; 16][..])
+            .unwrap()
+            .to_string();
+
+        let mut buf = [b'x'; 36];
+        let str = uuid.to_hyphenated().encode_lower(&mut buf);
+
+        let cookie = Cookie::build("token", &*str)
             .secure(true)
             .permanent()
             .same_site(SameSite::None)
@@ -99,7 +106,7 @@ pub async fn login(
 
         // Build
         let token = token::Model {
-            id: hash,
+            hash,
             user_id: user.id,
             expires_at: expiry.naive_utc(),
         };
@@ -111,7 +118,7 @@ pub async fn login(
     } else {
         HttpResponse::build(StatusCode::OK).json(LoginResponse {
             status: false,
-            message: String::from("invalid login info"),
+            message: "invalid login info",
         })
     }
 }
@@ -127,8 +134,13 @@ impl FromRequest for token::Model {
     >;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let hash = match req.cookie("token").as_ref().map(Cookie::value) {
-            Some(t) => t.to_owned(),
+        let uuid = match req
+            .cookie("token")
+            .as_ref()
+            .map(Cookie::value)
+            .map(Uuid::parse_str)
+        {
+            Some(Ok(t)) => t,
             _ => {
                 return future::err(InternalError::new(
                     "no valid token",
@@ -143,6 +155,10 @@ impl FromRequest for token::Model {
             .unwrap()
             .as_ref()
             .clone();
+
+        let hash = hash_with_salt(uuid.as_bytes(), 4, &[0; 16][..])
+            .unwrap()
+            .to_string();
 
         async move {
             Ok(match token::Entity::find_by_id(hash).one(&db).await {
