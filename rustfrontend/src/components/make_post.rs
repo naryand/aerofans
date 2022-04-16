@@ -10,11 +10,20 @@ pub enum Msg {
     Submit(String),
     ReceiveResponse(Result<PostData, String>),
 }
+
+#[derive(Clone, PartialEq, Eq)]
+pub enum Action {
+    Create,
+    Edit,
+    CreateReply,
+    EditREply,
+}
+
 #[derive(Clone, PartialEq, Eq, Properties)]
 pub struct Props {
     pub post_id: Option<i64>,
     pub reply_id: Option<i64>,
-    pub action: String,
+    pub action: Action,
 }
 
 pub struct MakePost {
@@ -52,8 +61,8 @@ impl Component for MakePost {
                 let post = PostText { text };
                 let post_id = self.props.post_id;
                 let reply_id = self.props.reply_id;
-                match self.props.action.as_str() {
-                    "create" => spawn_local(async move {
+                match self.props.action {
+                    Action::Create => spawn_local(async move {
                         let res = match Request::post("http://127.0.0.1:8000/post")
                             .body(serde_json::to_string(&post).unwrap())
                             .header("Content-Type", "application/json")
@@ -77,7 +86,7 @@ impl Component for MakePost {
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);
                     }),
-                    "edit" => spawn_local(async move {
+                    Action::Edit => spawn_local(async move {
                         let res = match Request::patch(&format!(
                             "http://127.0.0.1:8000/post/{}",
                             post_id.unwrap()
@@ -104,7 +113,7 @@ impl Component for MakePost {
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);
                     }),
-                    "create_reply" => spawn_local(async move {
+                    Action::CreateReply => spawn_local(async move {
                         let res = match Request::post(&format!(
                             "http://127.0.0.1:8000/post/{}/reply",
                             post_id.unwrap()
@@ -131,7 +140,7 @@ impl Component for MakePost {
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);
                     }),
-                    "edit_reply" => spawn_local(async move {
+                    Action::EditREply => spawn_local(async move {
                         let res = match Request::patch(&format!(
                             "http://127.0.0.1:8000/post/{}/reply/{}",
                             post_id.unwrap(),
@@ -159,7 +168,6 @@ impl Component for MakePost {
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);
                     }),
-                    _ => self.status = Err(String::from("error")),
                 }
             }
             Msg::ReceiveResponse(data) => {

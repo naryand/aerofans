@@ -2,6 +2,7 @@ mod components;
 mod model;
 mod pages;
 
+use components::make_post::Action;
 use pages::{all_posts::AllPosts, not_found::NotFound, post_comments::PostComments};
 
 use yew::prelude::*;
@@ -81,12 +82,12 @@ impl Model {
             AppRoute::NotFound(Permissive(route)) => html! { <NotFound route=route/> },
             AppRoute::Auth => html! { <Auth/> },
 
-            AppRoute::Create => html! { <MakePost action="create"/> },
-            AppRoute::Edit(id) => html! { <MakePost post_id=id action="edit"/> },
+            AppRoute::Create => html! { <MakePost action={Action::Create}/> },
+            AppRoute::Edit(id) => html! { <MakePost post_id=id action={Action::Edit}/> },
             AppRoute::Delete(id) => html! { <DeletePost post_id=id/> },
 
             AppRoute::EditReply(post_id, reply_id) => {
-                html! { <MakePost post_id=post_id reply_id=reply_id action="edit_reply"/> }
+                html! { <MakePost post_id=post_id reply_id=reply_id action={Action::EditREply}/> }
             }
             AppRoute::DeleteReply(post_id, reply_id) => {
                 html! { <DeletePost post_id=post_id reply_id=reply_id reply=Some(())/> }

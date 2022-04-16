@@ -1,5 +1,5 @@
 use crate::{
-    components::{comment::Comment, make_post::MakePost, post::Post},
+    components::{comment::Comment, make_post::{MakePost, Action}, post::Post},
     model::{CommentData, PostData},
 };
 
@@ -137,7 +137,7 @@ impl Component for PostComments {
             <>
                 { self.view_posts() }
                 <hr/>
-                <MakePost post_id=self.props.id action="create_reply"/>
+                <MakePost post_id=self.props.id action={Action::CreateReply}/>
                 { self.view_comments() }
             </>
         }
