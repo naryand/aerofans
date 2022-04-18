@@ -11,7 +11,6 @@ pub enum Msg {
 }
 
 pub struct AllPosts {
-    link: ComponentLink<Self>,
     posts: Result<Vec<PostData>, String>,
 }
 
@@ -22,10 +21,10 @@ impl AllPosts {
                 for p.iter().map(|post| html! {
                     <div>
                         <Post
-                            id=post.id
-                            username=post.username.to_owned()
-                            text=post.text.to_owned()
-                            created_at=post.created_at
+                            post_id={post.id}
+                            username={post.username.to_owned()}
+                            text={post.text.to_owned()}
+                            created_at={post.created_at}
                     />
                     </div>
                 })
@@ -39,18 +38,17 @@ impl Component for AllPosts {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        link.send_message(Msg::GetPosts);
+    fn create(ctx: &Context<Self>) -> Self {
+        ctx.link().send_message(Msg::GetPosts);
         Self {
-            link,
             posts: Err(String::from("fetching posts...")),
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::GetPosts => {
-                let cb = self.link.callback(Msg::ReceiveResponse);
+                let cb = ctx.link().callback(Msg::ReceiveResponse);
                 spawn_local(async move {
                     let res = match Request::get("http://127.0.0.1:8000/post/all")
                         .credentials(RequestCredentials::Include)
@@ -76,11 +74,7 @@ impl Component for AllPosts {
         }
     }
 
-    fn change(&mut self, _props: Self::Properties) -> ShouldRender {
-        false
-    }
-
-    fn view(&self) -> Html {
+    fn view(&self, _ctx: &Context<Self>) -> Html {
         html! {
             <>
                 { self.view_posts() }

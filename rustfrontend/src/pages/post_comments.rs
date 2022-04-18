@@ -1,6 +1,5 @@
 use crate::{
     components::{
-        comment::Comment,
         make_post::{Action, MakePost},
         post::Post,
     },
@@ -24,8 +23,6 @@ pub struct Props {
 }
 
 pub struct PostComments {
-    props: Props,
-    link: ComponentLink<Self>,
     post: Result<PostData, String>,
     comments: Result<Vec<CommentData>, String>,
 }
@@ -35,7 +32,7 @@ impl PostComments {
         match &self.post {
             Ok(p) => html! {
                 <div>
-                    <Post id=p.id username=p.username.to_owned() text=p.text.to_owned() created_at=p.created_at/>
+                    <Post post_id={p.id} username={p.username.to_owned()} text={p.text.to_owned()} created_at={p.created_at}/>
                 </div>
             },
             Err(e) => html! { <p>{ e.to_owned() }</p> },
@@ -47,12 +44,12 @@ impl PostComments {
             Ok(c) => html! {
                 for c.iter().map(|comm| html! {
                     <div>
-                        <Comment
-                            id=comm.id
-                            post_id=comm.post_id
-                            username=comm.username.to_owned()
-                            text=comm.text.to_owned()
-                            created_at=comm.created_at
+                        <Post
+                            post_id={comm.post_id}
+                            reply_id={comm.id}
+                            username={comm.username.to_owned()}
+                            text={comm.text.to_owned()}
+                            created_at={comm.created_at}
                         />
                     </div>
                 })
@@ -66,33 +63,31 @@ impl Component for PostComments {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        link.send_message(Msg::GetPost);
-        link.send_message(Msg::GetComments);
+    fn create(ctx: &Context<Self>) -> Self {
+        ctx.link().send_message(Msg::GetPost);
+        ctx.link().send_message(Msg::GetComments);
         Self {
-            props,
-            link,
             post: Err(String::from("fetching posts...")),
             comments: Err(String::from("fetching comments...")),
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::GetPost => {
-                let cb = self.link.callback(Msg::ReceivePost);
-                let id = self.props.id;
+                let cb = ctx.link().callback(Msg::ReceivePost);
+                let id = ctx.props().id;
                 spawn_local(async move {
                     let res = match Request::get(&format!("http://127.0.0.1:8000/post/{}", id))
                         .credentials(RequestCredentials::Include)
                         .send()
                         .await
                     {
-                        Ok(res) => res,
-                        Err(e) => {
-                            cb.emit(Err(e.to_string()));
-                            return;
-                        }
+                        Ok(res) => match res.status() {
+                            200 => res,
+                            _ => return cb.emit(Err(res.status_text())),
+                        },
+                        Err(e) => return cb.emit(Err(e.to_string())),
                     };
                     let data: Result<PostData, String> =
                         res.json().await.map_err(|x| x.to_string());
@@ -101,8 +96,8 @@ impl Component for PostComments {
                 true
             }
             Msg::GetComments => {
-                let cb = self.link.callback(Msg::ReceiveComments);
-                let id = self.props.id;
+                let cb = ctx.link().callback(Msg::ReceiveComments);
+                let id = ctx.props().id;
                 spawn_local(async move {
                     let res = Request::get(&format!("http://127.0.0.1:8000/post/{}/reply/all", id))
                         .credentials(RequestCredentials::Include)
@@ -126,22 +121,12 @@ impl Component for PostComments {
         }
     }
 
-    fn change(&mut self, props: Self::Properties) -> ShouldRender {
-        match self.props == props {
-            true => {
-                self.props = props;
-                true
-            }
-            false => false,
-        }
-    }
-
-    fn view(&self) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <>
                 { self.view_posts() }
                 <hr/>
-                <MakePost post_id=self.props.id action={Action::CreateReply}/>
+                <MakePost action={Action::CreateReply {post_id: ctx.props().id}}/>
                 { self.view_comments() }
             </>
         }

@@ -1,6 +1,6 @@
 use reqwasm::http::Request;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::RequestCredentials;
+use web_sys::{HtmlTextAreaElement, RequestCredentials};
 use yew::prelude::*;
 
 use crate::model::{PostData, PostText};
@@ -14,21 +14,17 @@ pub enum Msg {
 #[derive(Clone, PartialEq, Eq)]
 pub enum Action {
     Create,
-    Edit,
-    CreateReply,
-    EditREply,
+    Edit {post_id: i64},
+    CreateReply {post_id: i64},
+    EditReply {post_id: i64, reply_id: i64},
 }
 
 #[derive(Clone, PartialEq, Eq, Properties)]
 pub struct Props {
-    pub post_id: Option<i64>,
-    pub reply_id: Option<i64>,
     pub action: Action,
 }
 
 pub struct MakePost {
-    props: Props,
-    link: ComponentLink<Self>,
     status: Result<PostData, String>,
     text: String,
 }
@@ -46,29 +42,25 @@ impl Component for MakePost {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            props,
-            link,
             status: Err(String::from("")),
-            text: String::new()
+            text: String::new(),
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Input(text) => self.text = text,
 
             Msg::Submit => {
                 self.status = Err(String::from("posting..."));
-                let cb = self.link.callback(Msg::ReceiveResponse);
+                let cb = ctx.link().callback(Msg::ReceiveResponse);
                 let post = PostText {
                     text: std::mem::take(&mut self.text),
                 };
 
-                let post_id = self.props.post_id;
-                let reply_id = self.props.reply_id;
-                match self.props.action {
+                match ctx.props().action {
                     Action::Create => spawn_local(async move {
                         let res = match Request::post("http://127.0.0.1:8000/post")
                             .body(serde_json::to_string(&post).unwrap())
@@ -93,10 +85,10 @@ impl Component for MakePost {
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);
                     }),
-                    Action::Edit => spawn_local(async move {
+                    Action::Edit { post_id } => spawn_local(async move {
                         let res = match Request::patch(&format!(
                             "http://127.0.0.1:8000/post/{}",
-                            post_id.unwrap()
+                            post_id
                         ))
                         .body(serde_json::to_string(&post).unwrap())
                         .header("Content-Type", "application/json")
@@ -120,10 +112,10 @@ impl Component for MakePost {
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);
                     }),
-                    Action::CreateReply => spawn_local(async move {
+                    Action::CreateReply { post_id } => spawn_local(async move {
                         let res = match Request::post(&format!(
                             "http://127.0.0.1:8000/post/{}/reply",
-                            post_id.unwrap()
+                            post_id
                         ))
                         .body(serde_json::to_string(&post).unwrap())
                         .header("Content-Type", "application/json")
@@ -133,25 +125,19 @@ impl Component for MakePost {
                         {
                             Ok(res) => match res.status() {
                                 200 => res,
-                                _ => {
-                                    cb.emit(Err(res.status_text()));
-                                    return;
-                                }
+                                _ => return cb.emit(Err(res.status_text())),
                             },
-                            Err(e) => {
-                                cb.emit(Err(e.to_string()));
-                                return;
-                            }
+                            Err(e) => return cb.emit(Err(e.to_string())),
                         };
                         let data: Result<PostData, String> =
                             res.json().await.map_err(|x| x.to_string());
                         cb.emit(data);
                     }),
-                    Action::EditREply => spawn_local(async move {
+                    Action::EditReply { post_id, reply_id } => spawn_local(async move {
                         let res = match Request::patch(&format!(
                             "http://127.0.0.1:8000/post/{}/reply/{}",
-                            post_id.unwrap(),
-                            reply_id.unwrap(),
+                            post_id,
+                            reply_id
                         ))
                         .body(serde_json::to_string(&post).unwrap())
                         .header("Content-Type", "application/json")
@@ -161,15 +147,9 @@ impl Component for MakePost {
                         {
                             Ok(res) => match res.status() {
                                 200 => res,
-                                _ => {
-                                    cb.emit(Err(res.status_text()));
-                                    return;
-                                }
+                                _ => return cb.emit(Err(res.status_text())),
                             },
-                            Err(e) => {
-                                cb.emit(Err(e.to_string()));
-                                return;
-                            }
+                            Err(e) => return cb.emit(Err(e.to_string())),
                         };
                         let data: Result<PostData, String> =
                             res.json().await.map_err(|x| x.to_string());
@@ -184,22 +164,17 @@ impl Component for MakePost {
         true
     }
 
-    fn change(&mut self, props: Self::Properties) -> ShouldRender {
-        match self.props == props {
-            true => {
-                self.props = props;
-                true
-            }
-            false => false,
-        }
-    }
-
-    fn view(&self) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <>
-                <textarea placeholder="Post text" value={self.text.clone()} oninput=self.link.callback(|e: InputData| Msg::Input(e.value))/>
+                <textarea placeholder="Post text" value={self.text.clone()}
+                    onchange={ctx.link().batch_callback(|e: Event| {
+                        let input: Option<HtmlTextAreaElement> = e.target_dyn_into::<HtmlTextAreaElement>();
+                        input.map(|input| Msg::Input(input.value()))
+                    })}
+                />
                 <br/>
-                <button type="submit" onclick=self.link.callback(|_| Msg::Submit)>{"Post"}</button>
+                <button type="submit" onclick={ctx.link().callback(|_| Msg::Submit)}>{"Post"}</button>
                 { self.view_status() }
             </>
         }

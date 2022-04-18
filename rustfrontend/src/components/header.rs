@@ -1,40 +1,23 @@
 use yew::prelude::*;
+use yew_router::prelude::*;
 
-use crate::{AppAnchor, AppRoute};
+use crate::Route;
 
-pub struct Header {}
-
-impl Component for Header {
-    type Message = ();
-    type Properties = ();
-
-    fn create(_props: Self::Properties, _link: ComponentLink<Self>) -> Self {
-        Self {}
-    }
-
-    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
-        unimplemented!()
-    }
-
-    fn change(&mut self, _props: Self::Properties) -> ShouldRender {
-        false
-    }
-
-    fn view(&self) -> Html {
-        html! {
-            <>
-            <AppAnchor route=AppRoute::AllPosts>
-                { "home" }
-            </AppAnchor>
-            <br/>
-            <AppAnchor route=AppRoute::Auth>
-                { "login/register" }
-            </AppAnchor>
-            <br/>
-            <AppAnchor route=AppRoute::Create>
-                { "create post" }
-            </AppAnchor>
-            </>
-        }
+#[function_component(Header)]
+pub fn header() -> Html {
+    html! {
+        <>
+        <Link<Route> to={Route::AllPosts}>
+            { "home" }
+        </Link<Route>>
+        <br/>
+        <Link<Route> to={Route::Auth}>
+            { "login/register" }
+        </Link<Route>>
+        <br/>
+        <Link<Route> to={Route::Create}>
+            { "create post" }
+        </Link<Route>>
+        </>
     }
 }

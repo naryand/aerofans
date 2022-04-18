@@ -1,57 +1,44 @@
-use crate::{AppAnchor, AppRoute};
-
 use chrono::NaiveDateTime;
 use yew::prelude::*;
+use yew_router::prelude::*;
 
-#[derive(Clone, PartialEq, Eq, Properties)]
+use crate::Route;
+
+#[derive(Properties, PartialEq)]
 pub struct Props {
-    pub id: i64,
+    pub post_id: i64,
+    pub reply_id: Option<i64>,
     pub username: String,
     pub text: String,
     pub created_at: NaiveDateTime,
 }
 
-pub struct Post {
-    props: Props,
-}
-
-impl Component for Post {
-    type Message = ();
-    type Properties = Props;
-
-    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
-        Self { props }
-    }
-
-    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
-        unimplemented!()
-    }
-
-    fn change(&mut self, props: Self::Properties) -> ShouldRender {
-        match self.props == props {
-            true => {
-                self.props = props;
-                true
-            }
-            false => false,
-        }
-    }
-
-    fn view(&self) -> Html {
-        html! {
-            <p>
-                <AppAnchor route=AppRoute::PostComments(self.props.id)>
-                    { format!("{}", self.props.text) }
-                </AppAnchor>
-                { format!(" by {} at {} ", self.props.username, self.props.created_at) }
-                <AppAnchor route=AppRoute::Edit(self.props.id)>
+#[function_component(Post)]
+pub fn post(props: &Props) -> Html {
+    html! {
+        <p>
+            if let Some(reply_id) = props.reply_id {
+                { format!("{} by {} at {} ", &props.text, &props.username, &props.created_at) }
+                <Link<Route> to={Route::EditReply { post_id: props.post_id, reply_id: reply_id }}>
                     { "edit" }
-                </AppAnchor>
+                </Link<Route>>
                 { " " }
-                <AppAnchor route=AppRoute::Delete(self.props.id)>
+                <Link<Route> to={Route::DeleteReply { post_id: props.post_id, reply_id: reply_id }}>
                     { "delete" }
-                </AppAnchor>
-            </p>
-        }
+                </Link<Route>>
+            } else {
+                <Link<Route> to={Route::PostComments { id: props.post_id }}>
+                    { format!("{}", &props.text) }
+                </Link<Route>>
+                    { format!(" by {} at {} ", &props.username, &props.created_at) }
+                <Link<Route> to={Route::Edit { id: props.post_id }}>
+                    { "edit" }
+                </Link<Route>>
+                { " " }
+                <Link<Route> to={Route::Delete { id: props.post_id }}>
+                    { "delete" }
+                </Link<Route>>
+            }
+        </p>
     }
 }

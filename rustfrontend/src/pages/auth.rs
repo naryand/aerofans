@@ -1,5 +1,6 @@
 use reqwasm::http::{Request, RequestCredentials};
 use wasm_bindgen_futures::spawn_local;
+use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
 
 use crate::model::{LoginResponse, LoginUser};
@@ -13,7 +14,6 @@ pub enum Msg {
 }
 
 pub struct Auth {
-    link: ComponentLink<Self>,
     status: Result<LoginResponse, String>,
     username: String,
     password: String,
@@ -40,17 +40,15 @@ impl Component for Auth {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         Self {
-
-            link,
             status: Err(String::from("")),
             username: String::new(),
             password: String::new(),
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::InputUsername(username) => self.username = username,
             Msg::InputPasword(password) => self.password = password,
@@ -60,7 +58,7 @@ impl Component for Auth {
                     username: std::mem::take(&mut self.username),
                     password: std::mem::take(&mut self.password),
                 };
-                let cb = self.link.callback(Msg::ReceiveResponse);
+                let cb = ctx.link().callback(Msg::ReceiveResponse);
                 spawn_local(async move {
                     let res = match Request::post("http://127.0.0.1:8000/register")
                         .body(serde_json::to_string(&credentials).unwrap())
@@ -86,7 +84,7 @@ impl Component for Auth {
                     username: std::mem::take(&mut self.username),
                     password: std::mem::take(&mut self.password),
                 };
-                let cb = self.link.callback(Msg::ReceiveResponse);
+                let cb = ctx.link().callback(Msg::ReceiveResponse);
                 spawn_local(async move {
                     let res = match Request::post("http://127.0.0.1:8000/login")
                         .body(serde_json::to_string(&credentials).unwrap())
@@ -113,22 +111,26 @@ impl Component for Auth {
         true
     }
 
-    fn change(&mut self, _props: Self::Properties) -> ShouldRender {
-        false
-    }
-
-    fn view(&self) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <>
-                <input type="text" value={self.username.clone()} placeholder="Username" oninput=self.link.callback(|e: InputData| Msg::InputUsername(e.value))/>
+            <form onsubmit={Callback::from(|e: FocusEvent| e.prevent_default())}>
+                <input type="text" autocomplete="username" value={self.username.clone()} placeholder="Username"
+                    onchange={ctx.link().batch_callback(|e: Event| {
+                        let input: Option<HtmlTextAreaElement> = e.target_dyn_into::<HtmlTextAreaElement>();
+                        input.map(|input| Msg::InputUsername(input.value()))
+                })}/>
                 <br/>
-                <input type="password" value={self.password.clone()} placeholder="Password" oninput=self.link.callback(|e: InputData| Msg::InputPasword(e.value))/>
+                <input type="password" autocomplete="current-password" value={self.password.clone()} placeholder="Password"
+                    onchange={ctx.link().batch_callback(|e: Event| {
+                        let input: Option<HtmlTextAreaElement> = e.target_dyn_into::<HtmlTextAreaElement>();
+                        input.map(|input| Msg::InputPasword(input.value()))
+                })}/>
                 <br/>
                 <br/>
-                <button type="submit" onclick=self.link.callback(|_| Msg::Login)>{"Login"}</button>
-                <button type="submit" onclick=self.link.callback(|_| Msg::Register)>{"Register"}</button>
+                <button type="submit" onclick={ctx.link().callback(|_| Msg::Login)}>{"Login"}</button>
+                <button type="submit" onclick={ctx.link().callback(|_| Msg::Register)}>{"Register"}</button>
                 { self.view_status() }
-            </>
+            </form>
         }
     }
 }

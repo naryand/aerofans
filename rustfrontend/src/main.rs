@@ -2,100 +2,79 @@ mod components;
 mod model;
 mod pages;
 
-use components::make_post::Action;
-use pages::{all_posts::AllPosts, not_found::NotFound, post_comments::PostComments};
-
-use yew::prelude::*;
-use yew_router::{prelude::*, switch::Permissive};
-
-use crate::{
-    components::{delete_post::DeletePost, header::Header, make_post::MakePost},
-    pages::auth::Auth,
+use crate::components::{
+    delete_post::DeletePost,
+    header::Header,
+    make_post::{Action, MakePost},
+};
+use crate::pages::{
+    all_posts::AllPosts, auth::Auth, not_found::NotFound, post_comments::PostComments,
 };
 
-#[derive(Clone, Debug, Switch)]
-enum AppRoute {
-    #[to = "/!"]
+use wasm_logger;
+use yew::prelude::*;
+use yew_router::prelude::*;
+
+#[derive(Clone, Routable, PartialEq)]
+enum Route {
+    #[at("/")]
     AllPosts,
-    #[to = "/post/{id}"]
-    PostComments(i64),
-    #[to = "/404"]
-    NotFound(Permissive<String>),
-    #[to = "/auth"]
+    #[at("/post/:id")]
+    PostComments { id: i64 },
+    #[not_found]
+    #[at("/404")]
+    NotFound,
+    #[at("/auth")]
     Auth,
-    #[to = "/create"]
+    #[at("/create")]
     Create,
-    #[to = "/edit/{id}"]
-    Edit(i64),
-    #[to = "/delete/{id}"]
-    Delete(i64),
-    #[to = "/edit_reply/{post_id}/{reply_id}"]
-    EditReply(i64, i64),
-    #[to = "/delete_reply/{post_id}/{reply_id}"]
-    DeleteReply(i64, i64),
+    #[at("/edit/:id")]
+    Edit { id: i64 },
+    #[at("/delete/:id")]
+    Delete { id: i64 },
+    #[at("/edit_reply/:post_id/:reply_id")]
+    EditReply { post_id: i64, reply_id: i64 },
+    #[at("/delete_reply/:post_id/:reply_id")]
+    DeleteReply { post_id: i64, reply_id: i64 },
 }
 
-type AppRouter = Router<AppRoute>;
-type AppAnchor = RouterAnchor<AppRoute>;
+fn switch(switch: &Route) -> Html {
+    match switch {
+        Route::AllPosts => html! { <AllPosts/> },
+        Route::PostComments { id } => html! { <PostComments id={*id}/> },
 
-struct Model {}
+        Route::NotFound => html! { <NotFound/> },
+        Route::Auth => html! { <Auth/> },
 
-impl Component for Model {
-    type Message = ();
-    type Properties = ();
+        Route::Create => html! { <MakePost action={Action::Create}/> },
+        Route::Edit { id } => html! { <MakePost action={Action::Edit {post_id: *id}}/> },
+        Route::Delete { id } => html! { <DeletePost post_id={*id}/> },
 
-    fn create(_props: Self::Properties, _link: ComponentLink<Self>) -> Self {
-        Self {}
-    }
-
-    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
-        false
-    }
-
-    fn change(&mut self, _props: Self::Properties) -> ShouldRender {
-        false
-    }
-
-    fn view(&self) -> Html {
-        html! {
-            <>
-                <Header/>
-                <main>
-                    <AppRouter
-                        render=AppRouter::render(Self::switch)
-                        redirect=AppRouter::redirect(|route: Route| {
-                            AppRoute::NotFound(Permissive(Some(route.route)))
-                        })
-                   />
-                </main>
-            </>
+        Route::EditReply { post_id, reply_id } => {
+            html! { <MakePost action={Action::EditReply { post_id: *post_id, reply_id: *reply_id }}/> }
+        }
+        Route::DeleteReply { post_id, reply_id } => {
+            html! { <DeletePost post_id={*post_id} reply_id={*reply_id}/> }
         }
     }
 }
 
-impl Model {
-    fn switch(switch: AppRoute) -> Html {
-        match switch {
-            AppRoute::AllPosts => html! { <AllPosts/> },
-            AppRoute::PostComments(id) => html! { <PostComments id=id/> },
-
-            AppRoute::NotFound(Permissive(route)) => html! { <NotFound route=route/> },
-            AppRoute::Auth => html! { <Auth/> },
-
-            AppRoute::Create => html! { <MakePost action={Action::Create}/> },
-            AppRoute::Edit(id) => html! { <MakePost post_id=id action={Action::Edit}/> },
-            AppRoute::Delete(id) => html! { <DeletePost post_id=id/> },
-
-            AppRoute::EditReply(post_id, reply_id) => {
-                html! { <MakePost post_id=post_id reply_id=reply_id action={Action::EditREply}/> }
-            }
-            AppRoute::DeleteReply(post_id, reply_id) => {
-                html! { <DeletePost post_id=post_id reply_id=reply_id reply=Some(())/> }
-            }
-        }
+#[function_component(Main)]
+fn app() -> Html {
+    html! {
+        <>
+            <main>
+                <BrowserRouter>
+                    <Header/>
+                    <br/>
+                    <Switch<Route> render={Switch::render(switch)} />
+                </BrowserRouter>
+            </main>
+        </>
     }
 }
 
 fn main() {
-    yew::start_app::<Model>();
+    wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
+    yew::start_app::<Main>();
 }
