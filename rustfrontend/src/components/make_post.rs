@@ -1,14 +1,14 @@
 use reqwasm::http::Request;
-use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{HtmlTextAreaElement, RequestCredentials};
-use yew::{prelude::*, web_sys::HtmlFormElement};
+use web_sys::RequestCredentials;
+use yew::prelude::*;
 
 use crate::model::{PostData, PostText};
 
 pub enum Msg {
-    Submit(String),
+    Submit,
     ReceiveResponse(Result<PostData, String>),
+    Input(String),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -30,13 +30,14 @@ pub struct MakePost {
     props: Props,
     link: ComponentLink<Self>,
     status: Result<PostData, String>,
+    text: String,
 }
 
 impl MakePost {
     fn view_status(&self) -> Html {
         match &self.status {
-            Ok(_) => html! {},
-            Err(e) => html! { e.as_str() },
+            Ok(_) => html! {"success"},
+            Err(e) => html! { e },
         }
     }
 }
@@ -50,15 +51,21 @@ impl Component for MakePost {
             props,
             link,
             status: Err(String::from("")),
+            text: String::new()
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::Submit(text) => {
+            Msg::Input(text) => self.text = text,
+
+            Msg::Submit => {
                 self.status = Err(String::from("posting..."));
                 let cb = self.link.callback(Msg::ReceiveResponse);
-                let post = PostText { text };
+                let post = PostText {
+                    text: std::mem::take(&mut self.text),
+                };
+
                 let post_id = self.props.post_id;
                 let reply_id = self.props.reply_id;
                 match self.props.action {
@@ -190,30 +197,9 @@ impl Component for MakePost {
     fn view(&self) -> Html {
         html! {
             <>
-                <form onsubmit=self.link.callback(|e: FocusEvent| {
-                    let e = Event::from(e);
-                    e.prevent_default();
-
-                    let collection = e.target().unwrap().dyn_into::<HtmlFormElement>().unwrap().elements();
-                    let mut text = String::new();
-
-                    for i in 0..collection.length() {
-                        match collection.item(i) {
-                            Some(e) => match e.id().as_str() {
-                                "text" => {
-                                    text = e.dyn_into::<HtmlTextAreaElement>().unwrap().value();
-                                }
-                                _ => {}
-                            }
-                            None => {}
-                        }
-                    }
-
-                    Msg::Submit(text)
-                })>
-                <textarea id="text" placeholder="Post text"/><br/>
-                <input type="submit" value="Post"/>
-                </form>
+                <textarea placeholder="Post text" value={self.text.clone()} oninput=self.link.callback(|e: InputData| Msg::Input(e.value))/>
+                <br/>
+                <button type="submit" onclick=self.link.callback(|_| Msg::Submit)>{"Post"}</button>
                 { self.view_status() }
             </>
         }

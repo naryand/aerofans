@@ -1,21 +1,22 @@
-use js_sys::Reflect;
 use reqwasm::http::{Request, RequestCredentials};
-use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::spawn_local;
-use web_sys::HtmlInputElement;
-use yew::{prelude::*, web_sys::HtmlFormElement};
+use yew::prelude::*;
 
 use crate::model::{LoginResponse, LoginUser};
 
 pub enum Msg {
-    Register(String, String),
-    Login(String, String),
+    InputUsername(String),
+    InputPasword(String),
+    Register,
+    Login,
     ReceiveResponse(Result<LoginResponse, String>),
 }
 
 pub struct Auth {
     link: ComponentLink<Self>,
     status: Result<LoginResponse, String>,
+    username: String,
+    password: String,
 }
 
 impl Auth {
@@ -41,16 +42,24 @@ impl Component for Auth {
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
+
             link,
             status: Err(String::from("")),
+            username: String::new(),
+            password: String::new(),
         }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::Register(username, password) => {
+            Msg::InputUsername(username) => self.username = username,
+            Msg::InputPasword(password) => self.password = password,
+            Msg::Register => {
                 self.status = Err(String::from("registering..."));
-                let credentials = LoginUser { username, password };
+                let credentials = LoginUser {
+                    username: std::mem::take(&mut self.username),
+                    password: std::mem::take(&mut self.password),
+                };
                 let cb = self.link.callback(Msg::ReceiveResponse);
                 spawn_local(async move {
                     let res = match Request::post("http://127.0.0.1:8000/register")
@@ -71,9 +80,12 @@ impl Component for Auth {
                     cb.emit(data);
                 });
             }
-            Msg::Login(username, password) => {
+            Msg::Login => {
                 self.status = Err(String::from("logging in..."));
-                let credentials = LoginUser { username, password };
+                let credentials = LoginUser {
+                    username: std::mem::take(&mut self.username),
+                    password: std::mem::take(&mut self.password),
+                };
                 let cb = self.link.callback(Msg::ReceiveResponse);
                 spawn_local(async move {
                     let res = match Request::post("http://127.0.0.1:8000/login")
@@ -108,49 +120,13 @@ impl Component for Auth {
     fn view(&self) -> Html {
         html! {
             <>
-                <form onsubmit=self.link.callback(|e: FocusEvent| {
-                    let e = Event::from(e);
-                    e.prevent_default();
-
-                    let mut user = String::new();
-                    let mut pass = String::new();
-
-                    let collection = e.target().unwrap().dyn_into::<HtmlFormElement>().unwrap().elements();
-
-                    for i in 0..collection.length() {
-                        match collection.item(i) {
-                            Some(e) => match e.id().as_str() {
-                                "user" => {
-                                    user = e.dyn_into::<HtmlInputElement>().unwrap().value();
-                                }
-                                "pass" => {
-                                    pass = e.dyn_into::<HtmlInputElement>().unwrap().value();
-
-                                }
-                                _ => {}
-                            }
-                            None => {}
-                        }
-                    }
-
-                    let submitter_element = Reflect::get(&e, &JsValue::from_str("submitter")).unwrap();
-                    let submitter_value = submitter_element.dyn_into::<HtmlInputElement>().unwrap().value();
-
-                    match submitter_value.as_str() {
-                        "Login" => {
-                            Msg::Login(user, pass)
-                        }
-                        "Register" => {
-                            Msg::Register(user, pass)
-                        }
-                        _ => unimplemented!()
-                    }
-                })>
-                <input id="user" type="text" placeholder="Username"/><br/>
-                <input id="pass" type="password" placeholder="Password"/><br/><br/>
-                <input type="submit" value="Login"/>
-                <input type="submit" value="Register"/>
-                </form>
+                <input type="text" value={self.username.clone()} placeholder="Username" oninput=self.link.callback(|e: InputData| Msg::InputUsername(e.value))/>
+                <br/>
+                <input type="password" value={self.password.clone()} placeholder="Password" oninput=self.link.callback(|e: InputData| Msg::InputPasword(e.value))/>
+                <br/>
+                <br/>
+                <button type="submit" onclick=self.link.callback(|_| Msg::Login)>{"Login"}</button>
+                <button type="submit" onclick=self.link.callback(|_| Msg::Register)>{"Register"}</button>
                 { self.view_status() }
             </>
         }
