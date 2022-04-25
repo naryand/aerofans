@@ -3,6 +3,7 @@ use crate::{
         make_post::{Action, MakePost},
         post::Post,
     },
+    handle_req,
     model::{CommentData, PostData},
 };
 
@@ -10,125 +11,91 @@ use reqwasm::http::{Request, RequestCredentials};
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
-pub enum Msg {
-    GetPost,
-    GetComments,
-    ReceivePost(Result<PostData, String>),
-    ReceiveComments(Result<Vec<CommentData>, String>),
-}
-
 #[derive(Clone, PartialEq, Eq, Properties)]
 pub struct Props {
     pub id: i64,
 }
 
-pub struct PostComments {
-    post: Result<PostData, String>,
-    comments: Result<Vec<CommentData>, String>,
-}
+#[function_component(PostComments)]
+pub fn post_comments(props: &Props) -> Html {
+    let post = use_state_eq(|| None);
+    let comments = use_state_eq(Vec::<CommentData>::new);
 
-impl PostComments {
-    fn view_posts(&self) -> Html {
-        match &self.post {
-            Ok(p) => html! {
-                <div>
-                    <Post post_id={p.id} username={p.username.to_owned()} text={p.text.to_owned()} created_at={p.created_at}/>
-                </div>
-            },
-            Err(e) => html! { <p>{ e.to_owned() }</p> },
-        }
-    }
+    let post_status = use_state_eq(|| String::from("fetching posts..."));
+    let comment_status = use_state_eq(|| String::from("fetching comments..."));
 
-    fn view_comments(&self) -> Html {
-        match &self.comments {
-            Ok(c) => html! {
-                for c.iter().map(|comm| html! {
-                    <div>
-                        <Post
-                            post_id={comm.post_id}
-                            reply_id={comm.id}
-                            username={comm.username.to_owned()}
-                            text={comm.text.to_owned()}
-                            created_at={comm.created_at}
-                        />
-                    </div>
-                })
-            },
-            Err(e) => html! { <p> { e.to_owned() }</p> },
-        }
-    }
-}
+    let id = props.id;
 
-impl Component for PostComments {
-    type Message = Msg;
-    type Properties = Props;
+    {
+        let post_data = post.clone();
+        let post_state = post_status.clone();
 
-    fn create(ctx: &Context<Self>) -> Self {
-        ctx.link().send_message(Msg::GetPost);
-        ctx.link().send_message(Msg::GetComments);
-        Self {
-            post: Err(String::from("fetching posts...")),
-            comments: Err(String::from("fetching comments...")),
-        }
-    }
+        let comment_data = comments.clone();
+        let comment_state = comment_status.clone();
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg {
-            Msg::GetPost => {
-                let cb = ctx.link().callback(Msg::ReceivePost);
-                let id = ctx.props().id;
+        use_effect_with_deps(
+            move |_| {
                 spawn_local(async move {
-                    let res = match Request::get(&format!("http://127.0.0.1:8000/post/{}", id))
+                    let res = Request::get(&format!("http://127.0.0.1:8000/post/{}", id))
                         .credentials(RequestCredentials::Include)
                         .send()
-                        .await
-                    {
-                        Ok(res) => match res.status() {
-                            200 => res,
-                            _ => return cb.emit(Err(res.status_text())),
-                        },
-                        Err(e) => return cb.emit(Err(e.to_string())),
-                    };
-                    let data: Result<PostData, String> =
-                        res.json().await.map_err(|x| x.to_string());
-                    cb.emit(data);
+                        .await;
+
+                    if let Some(res) = handle_req(res, &post_state) {
+                        match res.json::<PostData>().await {
+                            Ok(o) => post_data.set(Some(o)),
+                            Err(e) => post_state.set(e.to_string()),
+                        }
+                    }
                 });
-                true
-            }
-            Msg::GetComments => {
-                let cb = ctx.link().callback(Msg::ReceiveComments);
-                let id = ctx.props().id;
                 spawn_local(async move {
                     let res = Request::get(&format!("http://127.0.0.1:8000/post/{}/reply/all", id))
                         .credentials(RequestCredentials::Include)
                         .send()
-                        .await
-                        .unwrap();
-                    let data: Result<Vec<CommentData>, String> =
-                        res.json().await.map_err(|x| x.to_string());
-                    cb.emit(data);
+                        .await;
+
+                    if let Some(res) = handle_req(res, &comment_state) {
+                        match res.json::<Vec<CommentData>>().await {
+                            Ok(o) => comment_data.set(o),
+                            Err(e) => comment_state.set(e.to_string()),
+                        }
+                    }
                 });
-                true
-            }
-            Msg::ReceivePost(data) => {
-                self.post = data;
-                true
-            }
-            Msg::ReceiveComments(data) => {
-                self.comments = data;
-                true
-            }
-        }
+                || {}
+            },
+            (),
+        );
     }
 
-    fn view(&self, ctx: &Context<Self>) -> Html {
-        html! {
-            <>
-                { self.view_posts() }
-                <hr/>
-                <MakePost action={Action::CreateReply {post_id: ctx.props().id}}/>
-                { self.view_comments() }
-            </>
-        }
+    html! {
+        <>
+            {&*post_status}
+            <div>
+                if let Some(post) = &*post {
+                    <Post
+                    post_id={post.id}
+                    username={post.username.to_owned()}
+                    text={post.text.to_owned()}
+                    created_at={post.created_at}
+                    />
+                }
+            </div>
+            <hr/>
+            <MakePost action={Action::CreateReply { post_id: id }}/>
+            {&*comment_status}
+            {
+                for (*comments).iter().map(|c| html! {
+                    <div>
+                        <Post
+                            post_id={c.post_id}
+                            reply_id={c.id}
+                            username={c.username.to_owned()}
+                            text={c.text.to_owned()}
+                            created_at={c.created_at}
+                        />
+                    </div>
+                })
+            }
+        </>
     }
 }

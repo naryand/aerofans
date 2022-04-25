@@ -11,6 +11,7 @@ use crate::pages::{
     all_posts::AllPosts, auth::Auth, not_found::NotFound, post_comments::PostComments,
 };
 
+use reqwasm::{http::Response, Error};
 use wasm_logger;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -55,6 +56,25 @@ fn switch(switch: &Route) -> Html {
         }
         Route::DeleteReply { post_id, reply_id } => {
             html! { <DeletePost post_id={*post_id} reply_id={*reply_id}/> }
+        }
+    }
+}
+
+fn handle_req(r: Result<Response, Error>, state: &UseStateHandle<String>) -> Option<Response> {
+    match r {
+        Ok(res) => match res.status() {
+            200 => {
+                state.set(String::new());
+                Some(res)
+            }
+            _ => {
+                state.set(res.status_text());
+                None
+            }
+        },
+        Err(e) => {
+            state.set(e.to_string());
+            None
         }
     }
 }
